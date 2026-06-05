@@ -72,6 +72,7 @@
     <Compile Include="DefKeyHandler.cs" />
     <Compile Include="DialogPositioner.cs" />
     <Compile Include="FontHandler.cs" />
+    <Compile Include="IniFile.cs" />
     <Compile Include="frmAbout.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -102,7 +103,7 @@
     <Compile Include="frmMain.Designer.cs">
       <DependentUpon>frmMain.cs</DependentUpon>
     </Compile>
-    <Compile Include="frmMain.Recording.cs">
+    <Compile Include="frmMain.recording.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="frmPrompt.cs">
@@ -130,6 +131,7 @@
       <DependentUpon>KpsColorControl.cs</DependentUpon>
     </Compile>
     <Compile Include="KpsHandler.cs" />
+    <Compile Include="KeyState.cs" />
     <Compile Include="NoKeyHandler.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

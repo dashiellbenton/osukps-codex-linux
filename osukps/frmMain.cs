@@ -4,7 +4,6 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -135,13 +134,6 @@ namespace osukps {
 			settingsModified = true;
 		}
 
-		#region inidll
-		[DllImport("kernel32")]
-		private static extern long WritePrivateProfileString(string section, string key, string val, string filePath);
-		[DllImport("kernel32")]
-		private static extern int GetPrivateProfileString(string section, string key, string def, StringBuilder retVal, int size, string filePath);
-		#endregion
-
 		#region dragcodez
 		private bool moveForm;
 		private Point moveOffset;
@@ -239,78 +231,77 @@ namespace osukps {
 
 		private void saveSettings() {
 			string settingsFile = "./" + this.settingsFile;
+			IniFile ini = new IniFile(settingsFile);
 
-			WritePrivateProfileString("Count", "count", buttonCount.ToString(), settingsFile);
-			WritePrivateProfileString("Count", "hide", hideButtonsToolStripMenuItem.Checked.ToString(), settingsFile);
-			WritePrivateProfileString("Font", "family", FontHandler.currentFont.FontFamily.Name, settingsFile);
-			WritePrivateProfileString("Font", "size", FontHandler.currentFont.Size.ToString(), settingsFile);
-			WritePrivateProfileString("Font", "bold", FontHandler.currentFont.Style == FontStyle.Bold ? "y":"n", settingsFile);
-			WritePrivateProfileString("Stuff", "reckey", reckey.ToString(), settingsFile);
-			WritePrivateProfileString("Colors", "kps", SerializeKpsColors(kpscolors, kpscolorscount), settingsFile);
-			WritePrivateProfileString("Colors", "fg", frmMain.FgColor.ToArgb().ToString(), settingsFile);
-			WritePrivateProfileString("Colors", "bg", BackColor.ToArgb().ToString(), settingsFile);
+			ini.Write("Count", "count", buttonCount.ToString());
+			ini.Write("Count", "hide", hideButtonsToolStripMenuItem.Checked.ToString());
+			ini.Write("Font", "family", FontHandler.currentFont.FontFamily.Name);
+			ini.Write("Font", "size", FontHandler.currentFont.Size.ToString());
+			ini.Write("Font", "bold", FontHandler.currentFont.Style == FontStyle.Bold ? "y":"n");
+			ini.Write("Stuff", "reckey", reckey.ToString());
+			ini.Write("Colors", "kps", SerializeKpsColors(kpscolors, kpscolorscount));
+			ini.Write("Colors", "fg", frmMain.FgColor.ToArgb().ToString());
+			ini.Write("Colors", "bg", BackColor.ToArgb().ToString());
 
 			for (var i = 0; i < MAX_BUTTONS; i++) {
 				var b = btns[i];
-				WritePrivateProfileString("KEY", "key" + (i + 1), b.mykey().ToString(), settingsFile);
-				WritePrivateProfileString("TEXT", "text" + (i + 1), b.mystring().ToString(), settingsFile);
-				WritePrivateProfileString("COLOR", "acolor" + (i + 1), b.myactivecolor().ToString(), settingsFile);
-				WritePrivateProfileString("COLOR", "icolor" + (i + 1), b.myinactivecolor().ToString(), settingsFile);
+				ini.Write("KEY", "key" + (i + 1), b.mykey().ToString());
+				ini.Write("TEXT", "text" + (i + 1), b.mystring().ToString());
+				ini.Write("COLOR", "acolor" + (i + 1), b.myactivecolor().ToString());
+				ini.Write("COLOR", "icolor" + (i + 1), b.myinactivecolor().ToString());
 			}
+			ini.Save();
 			settingsModified = false;
 		}
 
 		private void loadSettings() {
 			string settingsFile = "./" + this.settingsFile;
+			IniFile ini = new IniFile(settingsFile);
 			int tmpi;
 			bool tmpb;
 			string section = "";
 			string key = "";
 			try {
-				StringBuilder temp = new StringBuilder(32);
-				GetPrivateProfileString(section = "Count", key = "count", "4", temp, 32, settingsFile);
-				buttonCount = (byte) Int32.Parse(temp.ToString());
+				string temp;
+				temp = ini.Read(section = "Count", key = "count", "4");
+				buttonCount = (byte) Int32.Parse(temp);
 				SetButtonCount(buttonCount);
-				GetPrivateProfileString(section = "Count", key = "hide", "False", temp, 32, settingsFile);
-				if (bool.TryParse(temp.ToString(), out tmpb)) {
+				temp = ini.Read(section = "Count", key = "hide", "False");
+				if (bool.TryParse(temp, out tmpb)) {
 					hideButtonsToolStripMenuItem.Checked = tmpb;
 					UpdateHideButtonsMenuItem(tmpb);
 				}
-				GetPrivateProfileString(section = "Stuff", key = "reckey", "0", temp, 32, settingsFile);
-				reckey = Int32.Parse(temp.ToString());
+				temp = ini.Read(section = "Stuff", key = "reckey", "0");
+				reckey = Int32.Parse(temp);
 				UpdateSSRHotkeyActiveItem();
-				GetPrivateProfileString(section = "Colors", key = "kps", "", temp, 128, settingsFile);
-				string kpscols = temp.ToString();
+				string kpscols = ini.Read(section = "Colors", key = "kps", "");
 				if (kpscols.Length > 0) {
 					LoadKpsColors(kpscols);
 				}
-				GetPrivateProfileString(section = "Colors", key = "fg", "-1", temp, 32, settingsFile);
-				if (int.TryParse(temp.ToString(), out tmpi)) {
+				temp = ini.Read(section = "Colors", key = "fg", "-1");
+				if (int.TryParse(temp, out tmpi)) {
 					frmMain.FgColor = Color.FromArgb(tmpi);
 				}
-				GetPrivateProfileString(section = "Colors", key = "bg", "-16777216", temp, 32, settingsFile);
-				if (int.TryParse(temp.ToString(), out tmpi)) {
+				temp = ini.Read(section = "Colors", key = "bg", "-16777216");
+				if (int.TryParse(temp, out tmpi)) {
 					BackColor = Color.FromArgb(tmpi);
 					pnlInfo.BackColor = BackColor;
 				}
 
 				for (var i = 0; i < MAX_BUTTONS; i++) {
-					GetPrivateProfileString(section = "KEY", key = "key" + (i + 1), "", temp, 32, settingsFile);
-					if (temp.Length > 0) btns[i].KeySetup(Int32.Parse(temp.ToString()));
-					GetPrivateProfileString(section = "TEXT", key = "text" + (i + 1), "", temp, 32, settingsFile);
-					if (temp.Length > 0) btns[i].LabelSetup(temp.ToString());
-					GetPrivateProfileString(section = "COLOR", key = "acolor" + (i + 1), "", temp, 32, settingsFile);
-					if (temp.Length > 0) btns[i].ActiveColorSetup(Int32.Parse(temp.ToString()));
-					GetPrivateProfileString(section = "COLOR", key = "icolor" + (i + 1), "", temp, 32, settingsFile);
-					if (temp.Length > 0) btns[i].InactiveColorSetup(Int32.Parse(temp.ToString()));
+					temp = ini.Read(section = "KEY", key = "key" + (i + 1), "");
+					if (temp.Length > 0) btns[i].KeySetup(Int32.Parse(temp));
+					temp = ini.Read(section = "TEXT", key = "text" + (i + 1), "");
+					if (temp.Length > 0) btns[i].LabelSetup(temp);
+					temp = ini.Read(section = "COLOR", key = "acolor" + (i + 1), "");
+					if (temp.Length > 0) btns[i].ActiveColorSetup(Int32.Parse(temp));
+					temp = ini.Read(section = "COLOR", key = "icolor" + (i + 1), "");
+					if (temp.Length > 0) btns[i].InactiveColorSetup(Int32.Parse(temp));
 				}
 
-				GetPrivateProfileString(section = "Font", key = "family", "", temp, 32, settingsFile);
-				string fontfam = temp.ToString();
-				GetPrivateProfileString(section = "Font", key = "size", "", temp, 32, settingsFile);
-				string fontsize = temp.ToString();
-				GetPrivateProfileString(section = "Font", key = "bold", "", temp, 32, settingsFile);
-				string fontbold = temp.ToString();
+				string fontfam = ini.Read(section = "Font", key = "family", "");
+				string fontsize = ini.Read(section = "Font", key = "size", "");
+				string fontbold = ini.Read(section = "Font", key = "bold", "");
 				LoadFont(fontfam, fontsize, fontbold);
 				settingsModified = false;
 			} catch (Exception) {
